@@ -1,19 +1,22 @@
 from tkinter import messagebox
-from utils import getFilePaths,trainCustomModel,checkIfAvailable
-from organizer import organizeImages,organizeVids
+from trainModel import automateTrainingModel
+from utils import updateJSON,checkIfAvailable
+from organizer import organize
+from prepareImages import automatePreparingImages
 
-def updateScreen(searchParam):
-    trainCustomModel(searchParam)
+def updateScreen(dirPath,searchParam):
+    DIRPath = automatePreparingImages(searchParam)
+    automateTrainingModel(DIRPath,searchParam)
+    updateJSON(searchParam)
+    organize(dirPath,searchParam)
 
 def handelInputCommands(dirPath , searchParam):
-    imageFilePaths,vidFilePaths = getFilePaths(dirPath)
     ID , isValid = checkIfAvailable(searchParam)
-    if isValid==True and len(imageFilePaths)>0:
-        organizeImages(ID,imageFilePaths,dirPath)
-        organizeVids(ID,vidFilePaths,dirPath)
+    if isValid==True:
+        organize(dirPath,searchParam)
     else:
         response = messagebox.askquestion("Message","Do you want to train the model for detecting custom face ?")
         if response == 'yes':
-            updateScreen(searchParam)
+            updateScreen(dirPath,searchParam)
         else :
             pass
