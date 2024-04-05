@@ -1,0 +1,4 @@
+(1) Create a folder with the name you used as the search param
+(2) Copy the images with your face in that folder
+(3) Copy the images only if they contain only your face , otherwise don't do anything in this folder
+(4) This steps are optionl , but are recommended to improve the accuracacy of the model 
