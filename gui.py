@@ -2,7 +2,6 @@ from pathlib import Path
 from tkinter import Tk, Canvas, Entry,Button, PhotoImage
 from handeler import handelInputCommands
 
-
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame0")
 
@@ -16,7 +15,6 @@ def handleSearch():
 
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
-
 
 window = Tk()
 

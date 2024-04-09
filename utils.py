@@ -1,4 +1,4 @@
-from ultralytics import YOLO
+from tkinter import messagebox;
 import pathlib
 import shutil
 import json
@@ -54,3 +54,16 @@ def updateJSON(searchParam):
     availableOptions[str(ID)] = searchParam
     with open("available_options.json", 'w') as file:
         json.dump(availableOptions, file)
+
+def checkPath(DIRPath):
+    return os.path.exists(DIRPath)
+
+def chooseModel():
+    result = messagebox.askquestion("Choose Option", "There are two models available for organizing you stuff ... the medium model is comparatively slower but more accurate than the nano model ... Do you want to continue with the medium sized model ? ",
+                                    icon='question', type='yesno')
+    choice = ""
+    if result == 'yes':
+        choice = "m"
+    else:
+        choice = "n"
+    return choice;

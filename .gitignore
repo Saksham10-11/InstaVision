@@ -3,6 +3,7 @@ __pycache__/
 
 # Ignore environment-specific files
 .env
+.vene
 
 # Ignore system-specific files
 *.DS_Store
