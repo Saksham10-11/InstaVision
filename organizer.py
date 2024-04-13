@@ -149,7 +149,7 @@ def getFilteredImagesUsingCustomModel(ID,filePaths,searchParam,modelType):
         max_probablity = 0
         if len(probability_list)>0:
             max_probablity = max(probability_list)
-        if(max_probablity > 8) :
+        if(max_probablity > 0.75) :
             filteredImagePaths.append(filePath)
         print("Processed Image : ",filePath)
     return filteredImagePaths
