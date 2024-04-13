@@ -5,7 +5,7 @@ from ultralytics import YOLO
 
 # Prepare the images
 def gatherImages(DIRPath , imageCounter):
-    model = YOLO("Saved_Models/face-detector.pt")
+    model = YOLO("Saved_Models/yolov8n-face.pt")
     cap = cv2.VideoCapture(0)
     imagesCaptured = 0
     while(cap.isOpened() and imagesCaptured<10):
@@ -31,20 +31,24 @@ def gatherImages(DIRPath , imageCounter):
     cv2.destroyAllWindows()
 
 def processPresentImages(DIRPath):
-    model = YOLO("Saved_Models/face-detector.pt")
+    model = YOLO("Saved_Models/yolov8m-face.pt")
     imageCounter = 0
     for filename in os.scandir(DIRPath):
         imgPath = filename.path
         frame = cv2.imread(imgPath)
         results = model(imgPath)
         newImgPath = DIRPath+"/"+str(imageCounter)+".jpg"
-        if len(results[0].boxes) == 0:
+        boxs = results[0].boxes
+        if len(boxs) == 0:
             print("No face detected : ",imgPath)
             continue
-        x_min,y_min,x_max,y_max= (((results[0].boxes)[0].xyxy).tolist())[0]
-        processed_frame = processImage(frame,int(x_min),int(x_max),int(y_min),int(y_max))
-        cv2.imwrite(newImgPath, processed_frame)
-        imageCounter=imageCounter+1
+        for box in boxs:
+            conf = round(box.conf[0].item(), 2)
+            if conf>0.4:
+                x_min,y_min,x_max,y_max= ((box.xyxy).tolist())[0]
+                processed_frame = processImage(frame,int(x_min),int(x_max),int(y_min),int(y_max))
+                cv2.imwrite(newImgPath, processed_frame)
+                imageCounter=imageCounter+1
         os.remove(imgPath)
     return imageCounter
 

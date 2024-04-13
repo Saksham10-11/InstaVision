@@ -26,13 +26,13 @@ def organizeImages(ID,filePaths,dirPath,searchParam,modelType):
     if(ID <= MAX_DEFAULT_SUPPORTED_ID):
         organizeImagesUsingDefaultModel(ID,filePaths,dirPath,modelType)
     else :
-        organizeImagesUsingCustomModel(ID,filePaths,dirPath,searchParam)
+        organizeImagesUsingCustomModel(ID,filePaths,dirPath,searchParam,modelType)
 
 def organizeVids(ID,filePaths,dirPath,searchParam,modelType):
     if(ID <= MAX_DEFAULT_SUPPORTED_ID):
         organizeVideosUsingDefaultModel(ID,filePaths,dirPath,modelType)
     else:
-        organizeVideosUsingCustomModel(ID,filePaths,dirPath,searchParam)
+        organizeVideosUsingCustomModel(ID,filePaths,dirPath,searchParam,modelType)
 
 def organizeImagesUsingDefaultModel(ID,filePaths,dirPath,modelType):
     filteredImages = getFilteredImagesUsingDefaultModel(ID,filePaths,modelType)
@@ -103,8 +103,8 @@ def getFilteredVideosUsingDefaultModel(ID,filePaths,modelType):
         print("Processed Video : ",filePath)
     return filteredVideoPaths
 
-def organizeImagesUsingCustomModel(ID,filePaths,dirPath,searchParam):
-    filteredImages = getFilteredImagesUsingCustomModel(ID,filePaths,searchParam)
+def organizeImagesUsingCustomModel(ID,filePaths,dirPath,searchParam,modelType):
+    filteredImages = getFilteredImagesUsingCustomModel(ID,filePaths,searchParam,modelType)
     if(len(filteredImages)>0):
         destinationFolder = createDIR(dirPath,ID,"Images")
         copyFiles(filteredImages,destinationFolder)
@@ -112,8 +112,8 @@ def organizeImagesUsingCustomModel(ID,filePaths,dirPath,searchParam):
         print("No matches found !!")
     print("Done Organizing Images !!")
 
-def organizeVideosUsingCustomModel(ID,filePaths,dirPath,searchParam):
-    filteredVideos = getFilteredVideosUsingCustomModel(ID,filePaths,searchParam)
+def organizeVideosUsingCustomModel(ID,filePaths,dirPath,searchParam,modelType):
+    filteredVideos = getFilteredVideosUsingCustomModel(ID,filePaths,searchParam,modelType)
     if(len(filteredVideos)>0):
         destinationFolder = createDIR(dirPath,ID,"Videos")
         copyFiles(filteredVideos,destinationFolder)
@@ -121,13 +121,13 @@ def organizeVideosUsingCustomModel(ID,filePaths,dirPath,searchParam):
         print("No matches found !!")
     print("Done Organizing Videos !!")
 
-def getFilteredImagesUsingCustomModel(ID,filePaths,searchParam):
+def getFilteredImagesUsingCustomModel(ID,filePaths,searchParam,modelType):
     filteredImagePaths = []
     SVM_model_path = "Saved_Models/"+searchParam+"/SVM_model.pkl"
     Caliberated_SVC_path = "Saved_Models/"+searchParam+"/Calibrated_SVC.pkl"
     model = pickle.load(open(SVM_model_path, 'rb'))
     probablity_model = pickle.load(open(Caliberated_SVC_path, 'rb'))
-    faceDetector = YOLO("Saved_Models/face-detector.pt")
+    faceDetector = YOLO("Saved_Models/yolov8"+modelType+"-face.pt")
     facenet = FaceNet()
     for filePath in filePaths:
         frame = cv2.imread(filePath)
@@ -135,30 +135,32 @@ def getFilteredImagesUsingCustomModel(ID,filePaths,searchParam):
         box_list = []
         probability_list = []
         for box in results[0].boxes:
-            x_min,y_min,x_max,y_max= ((box.xyxy).tolist())[0]
-            img = processImage(frame,int(x_min),int(x_max),int(y_min),int(y_max))
-            img = np.expand_dims(img,axis=0)
-            ypred = facenet.embeddings(img)
-            face_name = model.predict(ypred)
-            probabilities = probablity_model.predict_proba(ypred)
-            probablity = probabilities[0][0]
-            if face_name == 0 :
-                probability_list.append(probablity)
+            conf = round(box.conf[0].item(), 2)
+            if conf>0.4:
+                x_min,y_min,x_max,y_max= ((box.xyxy).tolist())[0]
+                img = processImage(frame,int(x_min),int(x_max),int(y_min),int(y_max))
+                img = np.expand_dims(img,axis=0)
+                ypred = facenet.embeddings(img)
+                face_name = model.predict(ypred)
+                probabilities = probablity_model.predict_proba(ypred)
+                probablity = probabilities[0][0]
+                if face_name == 0 :
+                    probability_list.append(probablity)
         max_probablity = 0
         if len(probability_list)>0:
             max_probablity = max(probability_list)
-        if(max_probablity > 0.75) :
+        if(max_probablity > 8) :
             filteredImagePaths.append(filePath)
         print("Processed Image : ",filePath)
     return filteredImagePaths
 
-def getFilteredVideosUsingCustomModel(ID,filePaths,searchParam):
+def getFilteredVideosUsingCustomModel(ID,filePaths,searchParam,modelType):
     filteredVideoPaths = []
     SVM_model_path = "Saved_Models/"+searchParam+"/SVM_model.pkl"
     Caliberated_SVC_path = "Saved_Models/"+searchParam+"/Calibrated_SVC.pkl"
     model = pickle.load(open(SVM_model_path, 'rb'))
     probablity_model = pickle.load(open(Caliberated_SVC_path, 'rb'))
-    faceDetector = YOLO("Saved_Models/face-detector.pt")
+    faceDetector = YOLO("Saved_Models/yolov8"+modelType+"-face.pt")
     facenet = FaceNet()
     for filePath in filePaths:
         cap = cv2.VideoCapture(filePath)
@@ -173,15 +175,17 @@ def getFilteredVideosUsingCustomModel(ID,filePaths,searchParam):
                 results = faceDetector(frame)
                 probability_list = []
                 for box in results[0].boxes:
-                    x_min,y_min,x_max,y_max= ((box.xyxy).tolist())[0]
-                    img = processImage(frame,int(x_min),int(x_max),int(y_min),int(y_max))
-                    img = np.expand_dims(img,axis=0)
-                    ypred = facenet.embeddings(img)
-                    face_name = model.predict(ypred)
-                    probabilities = probablity_model.predict_proba(ypred)
-                    probablity = probabilities[0][0]
-                    if face_name == 0 :
-                        probability_list.append(probablity)
+                    conf = round(box.conf[0].item(), 2)
+                    if conf>0.4:
+                        x_min,y_min,x_max,y_max= ((box.xyxy).tolist())[0]
+                        img = processImage(frame,int(x_min),int(x_max),int(y_min),int(y_max))
+                        img = np.expand_dims(img,axis=0)
+                        ypred = facenet.embeddings(img)
+                        face_name = model.predict(ypred)
+                        probabilities = probablity_model.predict_proba(ypred)
+                        probablity = probabilities[0][0]
+                        if face_name == 0 :
+                            probability_list.append(probablity)
                 max_probablity = 0
                 if len(probability_list)>0:
                     max_probablity = max(probability_list)
